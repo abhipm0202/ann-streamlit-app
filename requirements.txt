@@ -4,4 +4,4 @@ numpy
 matplotlib
 scikit-learn
 openpyxl
-# tensorflow removed due to incompatibility with Python 3.13
+tensorflow==2.10.0
