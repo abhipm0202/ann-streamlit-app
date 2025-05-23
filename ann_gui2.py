@@ -7,7 +7,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error
 import matplotlib.pyplot as plt
 
-st.title("ANN Trainer and Predictor (Scikit-learn Version)")
+# Set page configuration
+st.set_page_config(page_title="Colab ANN Trainer", layout="wide")
+
+# Display NMIS logo and welcome message
+col1, col2 = st.columns([1, 6])
+with col1:
+    st.image("nmis_logo.png", width=100)  # <-- Make sure the logo file is in your app folder
+with col2:
+    st.title("Colab ANN Trainer")
+    st.markdown("### Welcome to ANN GUI developed by **D3MColab**")
+
+st.markdown("---")
 
 st.sidebar.header("1. Load Data")
 
