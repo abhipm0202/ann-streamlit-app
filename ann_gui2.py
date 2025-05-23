@@ -7,16 +7,29 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error
 import matplotlib.pyplot as plt
 
-# Set page configuration
+import streamlit as st
+from PIL import Image
+
+# Page configuration
 st.set_page_config(page_title="Colab ANN Trainer", layout="wide")
 
-# Display NMIS logo and welcome message
-col1, col2 = st.columns([1, 6])
+# Load logos
+nmis_logo = Image.open("nmis_logo.png")        # Ensure this exists in your repo
+d3m_logo = Image.open("d3mcolab_logo.png")     # The new logo you uploaded
+
+# Layout using columns
+col1, col2, col3 = st.columns([1, 3, 1])
+
 with col1:
-    st.image("nmis_logo.png", width=100)  # <-- Make sure the logo file is in your app folder
+    st.image(nmis_logo, use_column_width=True)
+
 with col2:
-    st.title("Colab ANN Trainer")
-    st.markdown("### Welcome to ANN GUI developed by **D3MColab**")
+    st.markdown("<h1 style='text-align: center;'>Colab ANN Trainer</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Welcome to ANN GUI developed by D3MColab</h4>", unsafe_allow_html=True)
+
+with col3:
+    st.image(d3m_logo, use_column_width=True)
+
 
 st.markdown("---")
 
