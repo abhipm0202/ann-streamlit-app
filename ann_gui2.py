@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,7 +8,6 @@ from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 from PIL import Image
 
-# Set page config
 st.set_page_config(page_title="Colab ANN Trainer", layout="wide")
 
 # Load logos
@@ -49,23 +49,36 @@ if uploaded_x and uploaded_y:
 
     st.sidebar.header("3. Training Configuration")
     solver = st.sidebar.selectbox("Select Training Algorithm (Solver)", ["adam", "sgd", "lbfgs"])
-    loss_function = st.sidebar.selectbox("Loss Function (fixed in sklearn)", ["Mean Squared Error (MSE)"])
     st.sidebar.write("Note: `MLPRegressor` uses MSE internally for regression tasks.")
 
     if st.sidebar.button("Train Model"):
         try:
             X_vals = X.values
-            Y_vals = Y.values.ravel() if Y.shape[1] == 1 else Y.values
-
+            Y_vals = Y.values if Y.shape[1] > 1 else Y.values.ravel()
             X_train, X_test, Y_train, Y_test = train_test_split(X_vals, Y_vals, test_size=test_size, random_state=42)
+
             model = MLPRegressor(hidden_layer_sizes=tuple(neurons), solver=solver, max_iter=epochs, random_state=42)
             model.fit(X_train, Y_train)
-
             Y_pred = model.predict(X_test)
-            r2 = r2_score(Y_test, Y_pred)
+
+            st.session_state['model'] = model
+            st.session_state['Y_test'] = Y_test
+            st.session_state['Y_pred'] = Y_pred
+
+            r2_scores = []
+            if len(Y_pred.shape) == 1:
+                r2_scores.append(r2_score(Y_test, Y_pred))
+            else:
+                for i in range(Y_pred.shape[1]):
+                    r2_scores.append(r2_score(Y_test[:, i], Y_pred[:, i]))
 
             st.success("Model trained successfully.")
-            st.write(f"**R² Score**: {r2:.4f}")
+            for i, r2 in enumerate(r2_scores):
+                st.markdown(f"**R² Score for Output {i+1}**: {r2:.4f}")
+
+            selected_output = 0
+            if len(r2_scores) > 1:
+                selected_output = st.selectbox("Select Output to Visualize:", list(range(Y_pred.shape[1])))
 
             fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -74,23 +87,23 @@ if uploaded_x and uploaded_y:
             axs[0].set_xlabel("Epoch")
             axs[0].set_ylabel("Loss")
 
-            axs[1].scatter(Y_test, Y_pred, alpha=0.7, label='Predictions')
-            # Add line of best fit
-            z = np.polyfit(Y_test.flatten(), Y_pred.flatten(), 1)
+            y_true = Y_test if len(Y_pred.shape) == 1 else Y_test[:, selected_output]
+            y_pred = Y_pred if len(Y_pred.shape) == 1 else Y_pred[:, selected_output]
+
+            axs[1].scatter(y_true, y_pred, alpha=0.6, label="Predictions")
+            z = np.polyfit(y_true, y_pred, 1)
             p = np.poly1d(z)
-            axs[1].plot(Y_test, p(Y_test), "r--", label="Best Fit")
+            axs[1].plot(y_true, p(y_true), "r--", label="Best Fit")
             axs[1].set_title("Actual vs Predicted")
             axs[1].set_xlabel("Actual")
             axs[1].set_ylabel("Predicted")
             axs[1].legend()
 
             st.pyplot(fig)
-            st.session_state['model'] = model
 
         except Exception as e:
             st.error(f"Training failed: {e}")
 
-    # Prediction section
     st.header("4. Make Predictions")
 
     with st.expander("Predict from Manual Input"):
@@ -115,9 +128,9 @@ if uploaded_x and uploaded_y:
                 if model:
                     test_X = pd.read_excel(test_file)
                     predictions = model.predict(test_X.values)
-                    result_df = pd.DataFrame(predictions, columns=["Y_Pred"])
-                    st.write(result_df)
-                    csv = result_df.to_csv(index=False).encode('utf-8')
+                    pred_df = pd.DataFrame(predictions, columns=[f"Y_Pred_{i+1}" for i in range(predictions.shape[1])] if predictions.ndim > 1 else ["Y_Pred"])
+                    st.write(pred_df)
+                    csv = pred_df.to_csv(index=False).encode("utf-8")
                     st.download_button("Download Predictions as CSV", csv, "predictions.csv", "text/csv")
                 else:
                     st.error("Please train the model first.")
